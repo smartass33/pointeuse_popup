@@ -23,7 +23,7 @@ class Popup():
         """
         win.update_idletasks()
         #width = win.winfo_width()
-        print ('width: '+str(width))
+        print ('width: '+str(width)) 
         frm_width = win.winfo_rootx() - win.winfo_x()
         win_width = width + 2 * frm_width
         #height = win.winfo_height()
