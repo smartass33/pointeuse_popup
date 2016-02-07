@@ -9,13 +9,13 @@ import subprocess
 import os
 import signal
 import time
-import nxppy
-
+#import nxppy
+import traceback
 
 
 
 class Manager(): 
-    server_url = 'http://pointeuse/employee'
+    server_url = 'http://192.168.1.31/employee'
     global employeelist
     global win
     global select
@@ -59,7 +59,14 @@ class Manager():
     
     def whichSelected (self) :
         #print "At %s of %d" % (select.curselection(), len(self.employeelist))
-        return int(select.curselection()[0])
+        if select is not None:
+            if len(select.curselection()):
+                return int(select.curselection()[0])
+            else:
+                return 0
+        else:
+            return 0
+            
     
     def addEntry (self) :
         self.employeelist.append ([nameVar.get(), identifierVar.get()])
@@ -71,13 +78,12 @@ class Manager():
         
     def createBadge(self) :
         self.employeelist[self.whichSelected()] = [nameVar.get(), identifierVar.get()]
-        tkMessageBox.showinfo(title="Creation d'un badge", message=nameVar.get())
+        tkMessageBox.showinfo(title=u"Creation d'un badge", message=u"Veuillez déposer le badge pour: "+nameVar.get())
         self.writeBadge(identifierVar.get())
         self.setSelect ()
         
-    def deleteBadge(self) :
-        self.employeelist[self.whichSelected()] = [nameVar.get(), identifierVar.get()]
-        tkMessageBox.showinfo(title="Creation d'un badge", message=nameVar.get())
+    def deleteBadge(self):
+        tkMessageBox.showinfo(title=u"Effacement du badge",message=u"Veuillez déposer le badge à effacer")
         self.writeBadge('')
         self.setSelect ()    
     
@@ -88,7 +94,7 @@ class Manager():
     def loadEntry(self) :
         name, identifier = self.employeelist[self.whichSelected()]
         nameVar.set(name)
-        identifierVar.set(identifier)
+        identifierVar.set(identifier)        
         
     def loadEntryFromClick(self,event):                           
         print("Double Click, so loadEntryFromClick") 
@@ -98,7 +104,7 @@ class Manager():
     
     def on_closing(self): 
         print 'calling on_closing'    
-    #    subprocess.call(['/home/pi/launch.sh&'],shell=True)
+        subprocess.call(['/home/pi/launch.sh&'],shell=True)
         win.destroy()
         return
     
@@ -138,12 +144,14 @@ class Manager():
 
         frame2 = Frame(win)       # Row of buttons
         frame2.pack()
-        b6 = Button(frame2,text=u" Chercher Salarié ",command=self.searchEmployee)
+        b1 = Button(frame2,text=u" Liste des Salariés ",command= lambda: self.searchEmployee(True))
+        b6 = Button(frame2,text=u" Chercher Salarié ",command= lambda: self.searchEmployee(False))
         b2 = Button(frame2,text=u"Créer badge",command=self.createBadge)
         b3 = Button(frame2,text="Invalider badge",command=self.deleteBadge)
         b4 = Button(frame2,text=u" Charger salarié ",command=self.loadEntry)
         b5 = Button(frame2,text=" Lire Badge ",command=self.readBadge)
 
+        b1.pack(side=LEFT)
         b6.pack(side=LEFT)
         #b4.pack(side=LEFT)
         b2.pack(side=LEFT)
@@ -160,13 +168,15 @@ class Manager():
         select.pack(side=LEFT,  fill=BOTH, expand=1)
         return win
     
-    def searchEmployee(self):
+    def searchEmployee(self,searchAll):
         print 'entering searchEmployee'
         #print ('nameVar: '+nameVar.get())
         searchString = nameVar.get()
         splitString = searchString.split(',')
-        #print ('searchString: '+splitString[0])
-        data = {'username':'ph','password':'phil','name':splitString[0]}
+        if searchAll:
+            data = {'username':'ph','password':'phil','name':''}
+        else:
+            data = {'username':'ph','password':'phil','name':splitString[0]}
         r = requests.get(self.server_url+"/searchAllEmployees", params = data)
         jsonStr = json.loads(r.text)
         
@@ -182,16 +192,32 @@ class Manager():
     
     def writeBadge(self,username):
         print 'entering writeBadge'
-  
-        mifare = nxppy.Mifare()
-        uid = mifare.select()
-        print ('writing'+username)
-        mifare.write_block(10, username)
-       
-    
+        '''
+        try: 
+                mifare = nxppy.Mifare()
+                uid = mifare.select()
+                print ('writing'+username)
+                mifare.write_block(10, username)
+                print ('write done')
+                if (username is ''):
+                        tkMessageBox.showinfo(title=u"Effacement réussie", message=u"Le contenu du badge a été effacé")
+                else:
+                        tkMessageBox.showinfo(title=u"Creation réussie", message=u"Le badge pour: "+nameVar.get()+u" a bien été créé")
+                win.update()
+        except nxppy.SelectError:
+                pass
+        except nxppy.WriteError:
+                print 'Write Error'
+                print traceback.print_exc()
+                #tkMessageBox.showerror("erreur d'écriture",u"Erreur d'écriture sur la carte")
+                #win.update()
+                self.writeBadge(username)
+                return
+                pass
+        '''
     def readBadge(self):
             print('starting cardreader')
-
+            '''
             mifare = nxppy.Mifare()
             q = True
             while q:
@@ -201,12 +227,10 @@ class Manager():
     
                     username = mifare.read_block(10)
                     if username is not None:
-                        print("username: "+username)
-                
+                        #print("username: "+username)              
                         data = {'username':str(username)}
-                        r = requests.get("http://192.168.1.21:8080/pointeuse/employee/getJSONEmployee", params = data)
-                        print r.url
-    
+                        r = requests.get(self.server_url+"/getJSONEmployee", params = data)
+                        print r.text
                         jsonStr = json.loads(r.text)
                         if jsonStr is not None:
                             hasError = (False if str(jsonStr['status'].encode('utf8','ignore')) == 'OK' else True)
@@ -214,10 +238,12 @@ class Manager():
                     # il y a une erreur: creation d'un message de warning
                             print 'error'
                         else:
-                            print jsonStr
+                            #print jsonStr
                             
                             nameVar.set(str(jsonStr['lastName'].encode('utf8','ignore')) +', '+str(jsonStr['firstName'].encode('utf8','ignore')))
                             identifierVar.set(str(jsonStr['userName'].encode('utf8','ignore')))
+                            tkMessageBox.showinfo(title=u"Lecture réussie", message=u"Contenu du badge: "+nameVar.get())
+                            win.update()
             
                         #self.sendDate(username)
                         q = False
@@ -229,9 +255,15 @@ class Manager():
                     #self.start()
                 except nxppy.ReadError:
                     print 'readError'
-                    self.readCard()
+                    self.readBadge()
+                except requests.ConnectionError:
+                    print 'connection Error'
+                    tkMessageBox.showerror(u'erreur de connexion',u'Il y a une erreur de connexion avec le serveur')
+                    win.update()
+                    return
+                    pass
                 time.sleep(1)
-          
+            '''
     
     def setSelect (self) :
         print 'calling setSelect'
@@ -247,8 +279,7 @@ if __name__ == '__main__':
     win = winManager.makeWindow()
     
     killList = ["launch.py"]
-    #for script in killList:
-            #killScript(script)
+    for script in killList:
+            winManager.killScript(script)
     winManager.setSelect ()
     win.mainloop()
-
