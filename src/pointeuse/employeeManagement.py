@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #     t k P h o n e . p y
 #
 from Tkinter import *
@@ -42,25 +43,26 @@ class Manager():
                             #os.system("sudo kill %s" % (PID,signal.SIGKILL))
                             os.kill(int(PID),signal.SIGKILL)
     
-    data = {'username':'ph','password':'phil'}
-    r = requests.get(server_url+"/getAllEmployees", params = data)
-    jsonStr = json.loads(r.text)
-    #print(jsonStr)
-    phonelist = []
-    for employee in jsonStr:
-        tmpArray = []
-        #print employee['firstName']
-        tmpArray.append(str(employee['lastName'].encode('utf8','ignore')) +', '+str(employee['firstName'].encode('utf8','ignore'))  )
-        tmpArray.append(employee['userName'])
-        phonelist.append(tmpArray)
+    def init(self):
+        data = {'username':'ph','password':'phil'}
+        r = requests.get(self.server_url+"/getAllEmployees", params = data)
+        jsonStr = json.loads(r.text)
+        #print(jsonStr)
+        self.phonelist = []
+        for employee in jsonStr:
+            tmpArray = []
+            #print employee['firstName']
+            tmpArray.append(str(employee['lastName'].encode('utf8','ignore')) +', '+str(employee['firstName'].encode('utf8','ignore'))  )
+            tmpArray.append(employee['userName'])
+            self.phonelist.append(tmpArray)
     
     
     def whichSelected (self) :
-        print "At %s of %d" % (select.curselection(), len(phonelist))
+        #print "At %s of %d" % (select.curselection(), len(self.phonelist))
         return int(select.curselection()[0])
     
     def addEntry (self) :
-        phonelist.append ([nameVar.get(), phoneVar.get()])
+        self.phonelist.append ([nameVar.get(), phoneVar.get()])
         self.setSelect ()
     
     def updateEntry(self,phonelist) :
@@ -68,19 +70,31 @@ class Manager():
         self.setSelect ()
         
     def createBadge(self) :
-        phonelist[self.whichSelected()] = [nameVar.get(), phoneVar.get()]
+        self.phonelist[self.whichSelected()] = [nameVar.get(), phoneVar.get()]
         tkMessageBox.showinfo(title="Creation d'un badge", message=nameVar.get())
         self.writeBadge(phoneVar.get())
         self.setSelect ()
+        
+    def deleteBadge(self) :
+        self.phonelist[self.whichSelected()] = [nameVar.get(), phoneVar.get()]
+        tkMessageBox.showinfo(title="Creation d'un badge", message=nameVar.get())
+        self.writeBadge('')
+        self.setSelect ()    
     
     def deleteEntry(self) :
-        del phonelist[self.whichSelected()]
+        del self.phonelist[self.whichSelected()]
         self.setSelect()
     
     def loadEntry(self) :
-        name, phone = phonelist[self.whichSelected()]
+        name, phone = self.phonelist[self.whichSelected()]
         nameVar.set(name)
         phoneVar.set(phone)
+        
+    def loadEntryFromClick(self,event):                           
+        print("Double Click, so loadEntryFromClick") 
+        name, phone = self.phonelist[self.whichSelected()]
+        nameVar.set(name)
+        phoneVar.set(phone)    
     
     def on_closing(self): 
         print 'calling on_closing'    
@@ -115,7 +129,7 @@ class Manager():
         frame1 = Frame(win)
         frame1.pack()
     
-        Label(frame1, text="Name").grid(row=0, column=0, sticky=W)
+        Label(frame1, text=u"Nom du salarié").grid(row=0, column=0, sticky=W)
         nameVar = StringVar()
         name = Entry(frame1, textvariable=nameVar)
         name.grid(row=0, column=1, sticky=W)
@@ -127,28 +141,30 @@ class Manager():
     
         frame2 = Frame(win)       # Row of buttons
         frame2.pack()
-        #b1 = Button(frame2,text=" Add  ",command=addEntry)
-        b2 = Button(frame2,text="Creer badge",command=self.createBadge)
-        b3 = Button(frame2,text="Invalider",command=self.deleteEntry)
-        b4 = Button(frame2,text=" Load ",command=self.loadEntry)
+        b6 = Button(frame2,text=u" Chercher Salarié ",command=self.searchEmployee)
+        b2 = Button(frame2,text=u"Créer badge",command=self.createBadge)
+        b3 = Button(frame2,text="Invalider badge",command=self.deleteBadge)
+        b4 = Button(frame2,text=u" Charger salarié ",command=self.loadEntry)
         b5 = Button(frame2,text=" Lire Badge ",command=self.readBadge)
-        b6 = Button(frame2,text=" Chercher Salarie ",command=self.searchEmployee)
-    
-        #b1.pack(side=LEFT); 
+
+        b6.pack(side=LEFT)
         b2.pack(side=LEFT)
-        b3.pack(side=LEFT); 
+        b3.pack(side=LEFT)
         b4.pack(side=LEFT)
         b5.pack(side=LEFT)
-        b6.pack(side=LEFT)
-    
+       
         frame3 = Frame(win)       # select of names
-        frame3.pack()
+        win.bind('<Double-1>', self.loadEntryFromClick)
+        #print 'frame3:'+frame3
+        frame3.pack(fill='both', expand=True)
         scroll = Scrollbar(frame3, orient=VERTICAL)
         select = Listbox(frame3, yscrollcommand=scroll.set, height=25)
         scroll.config (command=select.yview)
         scroll.pack(side=RIGHT, fill=Y)
         select.pack(side=LEFT,  fill=BOTH, expand=1)
         return win
+    
+
     
     def searchEmployee(self):
         print 'entering searchEmployee'
@@ -157,21 +173,31 @@ class Manager():
         r = requests.get(self.server_url+"/searchAllEmployees", params = data)
         jsonStr = json.loads(r.text)
         
-        phonelist = []
+        self.phonelist = []
         for employee in jsonStr:
             tmpArray = []
             #print employee['firstName']
             tmpArray.append(str(employee['lastName'].encode('utf8','ignore')) +', '+str(employee['firstName'].encode('utf8','ignore'))  )
             tmpArray.append(employee['userName'])
-            phonelist.append(tmpArray)
+            self.phonelist.append(tmpArray)
+        print self.phonelist
         self.setSelect ()
-        frame3 = Frame(win)       # select of names
-        frame3.pack()
-        scroll = Scrollbar(frame3, orient=VERTICAL)
-        select = Listbox(frame3, yscrollcommand=scroll, height=25)
+          
+        #frame = win.winfo_children()[2]
+        #frame.pack_forget()
+        #frame.destroy()
+        #for w in win.children.values():
+        #for w in win.winfo_children():
+            #print w
+        
+        
+        #frame3 = Frame(win)       # select of names
+        #frame3.pack()
+        #scroll = Scrollbar(frame3, orient=VERTICAL)
+        #select = Listbox(frame3, yscrollcommand=scroll, height=25)
         #select = Listbox(win.frame3, yscrollcommand=scroll.set, height=25)
         select.pack(side=LEFT,  fill=BOTH, expand=1)
-        print phonelist
+        print self.phonelist
     
     def writeBadge(self,username):
         print 'entering writeBadge'
@@ -226,18 +252,19 @@ class Manager():
                 time.sleep(1)
           '''
     
-    def setSelect (self ) :
+    def setSelect (self) :
         print 'calling setSelect'
        #print employeeList
-        phonelist.sort()
+        self.phonelist.sort()
         select.delete(0,END)
-        for name,phone in phonelist :
+        for name,phone in self.phonelist :
             select.insert (END, name)
 
 
 if __name__ == '__main__':
     
     winManager = Manager()
+    winManager.init()
     win = winManager.makeWindow()
     
     killList = ["launch.py"]
