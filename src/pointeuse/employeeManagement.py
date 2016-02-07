@@ -9,14 +9,14 @@ import subprocess
 import os
 import signal
 import time
-#import nxppy
+import nxppy
 
 
 
 
 class Manager(): 
     server_url = 'http://pointeuse/employee'
-    global phonelist
+    global employeelist
     global win
     global select
     
@@ -48,53 +48,53 @@ class Manager():
         r = requests.get(self.server_url+"/getAllEmployees", params = data)
         jsonStr = json.loads(r.text)
         #print(jsonStr)
-        self.phonelist = []
+        self.employeelist = []
         for employee in jsonStr:
             tmpArray = []
             #print employee['firstName']
             tmpArray.append(str(employee['lastName'].encode('utf8','ignore')) +', '+str(employee['firstName'].encode('utf8','ignore'))  )
             tmpArray.append(employee['userName'])
-            self.phonelist.append(tmpArray)
+            self.employeelist.append(tmpArray)
     
     
     def whichSelected (self) :
-        #print "At %s of %d" % (select.curselection(), len(self.phonelist))
+        #print "At %s of %d" % (select.curselection(), len(self.employeelist))
         return int(select.curselection()[0])
     
     def addEntry (self) :
-        self.phonelist.append ([nameVar.get(), phoneVar.get()])
+        self.employeelist.append ([nameVar.get(), identifierVar.get()])
         self.setSelect ()
     
-    def updateEntry(self,phonelist) :
-        phonelist[self.whichSelected()] = [nameVar.get(), phoneVar.get()]
+    def updateEntry(self,employeelist) :
+        employeelist[self.whichSelected()] = [nameVar.get(), identifierVar.get()]
         self.setSelect ()
         
     def createBadge(self) :
-        self.phonelist[self.whichSelected()] = [nameVar.get(), phoneVar.get()]
+        self.employeelist[self.whichSelected()] = [nameVar.get(), identifierVar.get()]
         tkMessageBox.showinfo(title="Creation d'un badge", message=nameVar.get())
-        self.writeBadge(phoneVar.get())
+        self.writeBadge(identifierVar.get())
         self.setSelect ()
         
     def deleteBadge(self) :
-        self.phonelist[self.whichSelected()] = [nameVar.get(), phoneVar.get()]
+        self.employeelist[self.whichSelected()] = [nameVar.get(), identifierVar.get()]
         tkMessageBox.showinfo(title="Creation d'un badge", message=nameVar.get())
         self.writeBadge('')
         self.setSelect ()    
     
     def deleteEntry(self) :
-        del self.phonelist[self.whichSelected()]
+        del self.employeelist[self.whichSelected()]
         self.setSelect()
     
     def loadEntry(self) :
-        name, phone = self.phonelist[self.whichSelected()]
+        name, identifier = self.employeelist[self.whichSelected()]
         nameVar.set(name)
-        phoneVar.set(phone)
+        identifierVar.set(identifier)
         
     def loadEntryFromClick(self,event):                           
         print("Double Click, so loadEntryFromClick") 
-        name, phone = self.phonelist[self.whichSelected()]
+        name, identifier = self.employeelist[self.whichSelected()]
         nameVar.set(name)
-        phoneVar.set(phone)    
+        identifierVar.set(identifier)    
     
     def on_closing(self): 
         print 'calling on_closing'    
@@ -119,7 +119,7 @@ class Manager():
             win.deiconify()
     
     def makeWindow (self) :
-        global nameVar, phoneVar, select
+        global nameVar, identifierVar, select
         win = Tk()
         win.title(u"gestionnaire des badges")
         win.lift()
@@ -134,12 +134,8 @@ class Manager():
         nameVar = StringVar()
         name = Entry(frame1, textvariable=nameVar)
         name.grid(row=0, column=1, sticky=W)
-    
-        #Label(frame1, text="Phone").grid(row=1, column=0, sticky=W)
-        phoneVar= StringVar()
-        #phone= Entry(frame1, textvariable=phoneVar)
-        #phone.grid(row=1, column=1, sticky=W)
-    
+        identifierVar= StringVar()
+
         frame2 = Frame(win)       # Row of buttons
         frame2.pack()
         b6 = Button(frame2,text=u" Chercher Salarié ",command=self.searchEmployee)
@@ -156,7 +152,6 @@ class Manager():
        
         frame3 = Frame(win,bd=0)       # select of names
         win.bind('<Double-1>', self.loadEntryFromClick)
-        #print 'frame3:'+frame3
         frame3.pack(fill='both', expand=True)
         scroll = Scrollbar(frame3, orient=VERTICAL)
         select = Listbox(frame3, yscrollcommand=scroll.set, height=25,bd=0,width=200)
@@ -164,8 +159,6 @@ class Manager():
         scroll.pack(side=RIGHT, fill=Y)
         select.pack(side=LEFT,  fill=BOTH, expand=1)
         return win
-    
-
     
     def searchEmployee(self):
         print 'entering searchEmployee'
@@ -177,44 +170,28 @@ class Manager():
         r = requests.get(self.server_url+"/searchAllEmployees", params = data)
         jsonStr = json.loads(r.text)
         
-        self.phonelist = []
+        self.employeelist = []
         for employee in jsonStr:
             tmpArray = []
             #print employee['firstName']
             tmpArray.append(str(employee['lastName'].encode('utf8','ignore')) +', '+str(employee['firstName'].encode('utf8','ignore'))  )
             tmpArray.append(employee['userName'])
-            self.phonelist.append(tmpArray)
-        print self.phonelist
+            self.employeelist.append(tmpArray)
         self.setSelect ()
-          
-        #frame = win.winfo_children()[2]
-        #frame.pack_forget()
-        #frame.destroy()
-        #for w in win.children.values():
-        #for w in win.winfo_children():
-            #print w
-        
-        
-        #frame3 = Frame(win)       # select of names
-        #frame3.pack()
-        #scroll = Scrollbar(frame3, orient=VERTICAL)
-        #select = Listbox(frame3, yscrollcommand=scroll, height=25)
-        #select = Listbox(win.frame3, yscrollcommand=scroll.set, height=25)
         select.pack(side=LEFT,  fill=BOTH, expand=1)
-        print self.phonelist
     
     def writeBadge(self,username):
         print 'entering writeBadge'
-        '''
+  
         mifare = nxppy.Mifare()
         uid = mifare.select()
         print ('writing'+username)
         mifare.write_block(10, username)
-        '''
+       
     
     def readBadge(self):
             print('starting cardreader')
-            '''
+
             mifare = nxppy.Mifare()
             q = True
             while q:
@@ -240,7 +217,7 @@ class Manager():
                             print jsonStr
                             
                             nameVar.set(str(jsonStr['lastName'].encode('utf8','ignore')) +', '+str(jsonStr['firstName'].encode('utf8','ignore')))
-                            phoneVar.set(str(jsonStr['userName'].encode('utf8','ignore')))
+                            identifierVar.set(str(jsonStr['userName'].encode('utf8','ignore')))
             
                         #self.sendDate(username)
                         q = False
@@ -254,19 +231,17 @@ class Manager():
                     print 'readError'
                     self.readCard()
                 time.sleep(1)
-          '''
+          
     
     def setSelect (self) :
         print 'calling setSelect'
-       #print employeeList
-        self.phonelist.sort()
+        self.employeelist.sort()
         select.delete(0,END)
-        for name,phone in self.phonelist :
+        for name,identifier in self.employeelist :
             select.insert (END, name)
 
 
 if __name__ == '__main__':
-    
     winManager = Manager()
     winManager.init()
     win = winManager.makeWindow()
