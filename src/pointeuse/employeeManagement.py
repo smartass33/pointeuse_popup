@@ -121,6 +121,7 @@ class Manager():
     def makeWindow (self) :
         global nameVar, phoneVar, select
         win = Tk()
+        win.title(u"gestionnaire des badges")
         win.lift()
         win.attributes('-topmost', True)
         win.protocol("WM_DELETE_WINDOW",self.on_closing)
@@ -148,17 +149,17 @@ class Manager():
         b5 = Button(frame2,text=" Lire Badge ",command=self.readBadge)
 
         b6.pack(side=LEFT)
+        #b4.pack(side=LEFT)
         b2.pack(side=LEFT)
         b3.pack(side=LEFT)
-        b4.pack(side=LEFT)
         b5.pack(side=LEFT)
        
-        frame3 = Frame(win)       # select of names
+        frame3 = Frame(win,bd=0)       # select of names
         win.bind('<Double-1>', self.loadEntryFromClick)
         #print 'frame3:'+frame3
         frame3.pack(fill='both', expand=True)
         scroll = Scrollbar(frame3, orient=VERTICAL)
-        select = Listbox(frame3, yscrollcommand=scroll.set, height=25)
+        select = Listbox(frame3, yscrollcommand=scroll.set, height=25,bd=0,width=200)
         scroll.config (command=select.yview)
         scroll.pack(side=RIGHT, fill=Y)
         select.pack(side=LEFT,  fill=BOTH, expand=1)
@@ -168,8 +169,11 @@ class Manager():
     
     def searchEmployee(self):
         print 'entering searchEmployee'
-        print ('nameVar: '+nameVar.get())
-        data = {'username':'ph','password':'phil','name':nameVar.get()}
+        #print ('nameVar: '+nameVar.get())
+        searchString = nameVar.get()
+        splitString = searchString.split(',')
+        #print ('searchString: '+splitString[0])
+        data = {'username':'ph','password':'phil','name':splitString[0]}
         r = requests.get(self.server_url+"/searchAllEmployees", params = data)
         jsonStr = json.loads(r.text)
         
